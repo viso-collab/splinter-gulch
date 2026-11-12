@@ -42,7 +42,9 @@ button{font:inherit;color:inherit}
 .iconbtn:hover{background:var(--panel-2)}
 :focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 
-.layout{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:12px}
+.layout{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:12px;transition:grid-template-columns .4s ease}
+@media (min-width:901px){.app.shop .layout{grid-template-columns:minmax(0,1fr) minmax(470px,50%)}}
+@media (prefers-reduced-motion:reduce){.layout{transition:none}}
 .stage{position:relative;border-radius:10px;overflow:hidden;min-height:460px;background:#d6aa70;touch-action:none;user-select:none;-webkit-user-select:none;
   border:6px solid #5a371a;box-shadow:inset 0 0 0 2px #2a170a,0 0 0 2px #2a170a}
 .stage canvas#cv{position:absolute;inset:0;width:100%;height:100%;display:block}
@@ -65,9 +67,12 @@ button{font:inherit;color:inherit}
 .dcard .unlock{color:#ffd257;font-weight:700;margin-top:10px}
 .dcard .btn{margin-top:16px}
 
-.wchip{position:absolute;left:10px;bottom:10px;display:grid;grid-template-columns:48px minmax(0,1fr);gap:10px;align-items:center;
-  background:rgba(43,24,8,.88);border:1px solid #7a5230;border-left:4px solid var(--rc,#7a5230);border-radius:10px;padding:7px 12px 7px 7px;cursor:pointer;
-  width:min(330px,calc(100% - 20px));box-sizing:border-box;text-align:left}
+.wchip{display:grid;grid-template-columns:48px minmax(0,1fr);gap:10px;align-items:center;
+  background:rgba(0,0,0,.28);border:0;border-left:4px solid var(--rc,#7a5230);border-bottom:1px solid #24150a;padding:8px 12px 8px 8px;cursor:pointer;
+  width:100%;box-sizing:border-box;text-align:left}
+.wchip:hover{background:rgba(0,0,0,.38)}
+.shopbar{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;background:var(--gold);color:var(--gold-ink);padding:8px 14px;font-size:14px;font-weight:600}
+.shopbar b{font-family:var(--display);font-weight:400;font-size:16px}
 .wchip canvas{width:48px;height:48px}
 .wchip .t1{font-weight:700;font-size:15px;color:var(--rc,var(--fg));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wchip .t2{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;font-weight:700}
@@ -201,20 +206,22 @@ button{font:inherit;color:inherit}
         <div class="daytxt" id="dayTxt">0 / 8 piggies</div>
         <div class="daytxt" id="dayNext" style="color:#ffd257"></div>
       </div>
-      <button class="wchip" id="wchip" type="button" aria-label="Equipped weapon">
-        <canvas id="chipCv" width="96" height="96" aria-hidden="true"></canvas>
-        <div style="min-width:0"><div class="t1" id="chipName"></div><div class="t2" id="chipRar"></div><div class="t3" id="chipTrait"></div></div>
-      </button>
       <div class="dayover" id="dayOver">
         <div class="dcard">
           <h2 id="doTitle">Day 1</h2>
           <div id="doBody"></div>
+          <div class="unlock" id="doNudge"></div>
           <button class="btn big" id="startDay" type="button">Start day 1</button>
         </div>
       </div>
     </section>
 
     <aside class="panel">
+      <button class="wchip" id="wchip" type="button" aria-label="Equipped weapon">
+        <canvas id="chipCv" width="96" height="96" aria-hidden="true"></canvas>
+        <div style="min-width:0"><div class="t1" id="chipName"></div><div class="t2" id="chipRar"></div><div class="t3" id="chipTrait"></div></div>
+      </button>
+      <div class="shopbar" id="shopBar" hidden><b>Between days</b><span id="shopTxt"></span></div>
       <nav class="tabs" role="tablist">
         <button class="tab" role="tab" aria-selected="true" data-tab="skills" type="button">Skills</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="chest" type="button">Chests <span class="badge" id="chestBadge">0</span></button>
@@ -348,7 +355,7 @@ const WEAPONS = [
 ];
 const WMAP = Object.fromEntries(WEAPONS.map(w => [w.id, w]));
 const wColor = w => w.r ? RAR[w.r].color : '#cfc3ac';
-const dupVal = w => Math.round(RAR[w.r].val * (1 + S.day / 10) * .5);
+const dupVal = w => Math.round(RAR[w.r].val * (1 + S.day / 10) * .15);
 
 /* ---------- Skill tree ---------- */
 const AB = {
@@ -362,20 +369,20 @@ const AB = {
 };
 const hammerBase = l => Math.round((1 + l) * Math.pow(1.1, l));
 const SKILLS = {
-  herd:     { name: 'Bigger Herd',   max: 6,  base: 50,   g: 1.9,  req: [], eff: l => l ? `+${l} piggies in the yard at once` : 'No extra piggies' },
+  herd:     { name: 'Bigger Herd',   max: 6,  base: 35,   g: 1.9,  req: [], eff: l => l ? `+${l} piggies in the yard at once` : 'No extra piggies' },
   breed:    { name: 'Breeding Pens', max: 5,  base: 40,   g: 1.8,  req: [['herd', 1]], eff: l => l ? `Piggies arrive ${pc(.12 * l)} faster` : 'Normal arrival speed' },
   fat:      { name: 'Fat Piggies',   max: 15, base: 30,   g: 1.55, req: [['herd', 1]], eff: l => `+${20 * l}% gold from piggies` },
   longday:  { name: 'Long Days',     max: 10, base: 60,   g: 1.85, req: [['breed', 1]], eff: l => `Days last ${30 + 3 * l} s` },
   lucky:    { name: 'Lucky Piggies', max: 10, base: 40,   g: 1.8,  req: [['fat', 1]], eff: l => `${num1(10 + 1.5 * l)}% base chest chance` },
   shiny:    { name: 'Shiny Piggies', max: 5,  base: 1500, g: 2,    req: [['longday', 2], ['lucky', 2]], eff: l => l ? `${3 * l}% of piggies are shiny: 5× gold, 2× chests` : 'No shiny piggies' },
-  lightning:{ name: 'Lightning Rod', max: 5,  base: 80,   g: 2.2,  req: [], eff: l => { if (!l) return 'Not learned'; const a = AB.lightning(l); return `Lightning every ${num1(a.every)} s for ${num1(a.mult)}× damage`; } },
+  lightning:{ name: 'Lightning Rod', max: 5,  base: 60,   g: 2.2,  req: [], eff: l => { if (!l) return 'Not learned'; const a = AB.lightning(l); return `Lightning every ${num1(a.every)} s for ${num1(a.mult)}× damage`; } },
   cactus:   { name: 'Cactus Patch',  max: 5,  base: 150,  g: 2.2,  req: [['lightning', 1]], eff: l => { if (!l) return 'Not learned'; const a = AB.cactus(l); return `${a.count} cact${a.count > 1 ? 'i' : 'us'} shoot thorns for ${num1(a.mult)}× damage`; } },
   dynamite: { name: 'Dynamite',      max: 5,  base: 150,  g: 2.2,  req: [['lightning', 1]], eff: l => l ? `Every 5th swing explodes for ${AB.dynamite(l).mult}× damage in a wide blast` : 'Not learned' },
   lasso:    { name: 'Lasso',         max: 5,  base: 400,  g: 2.2,  req: [['cactus', 1]], eff: l => l ? `Pulls nearby piggies toward your weapon (strength ${l})` : 'Not learned' },
   ricochet: { name: 'Ricochet',      max: 5,  base: 400,  g: 2.2,  req: [['dynamite', 1]], eff: l => l ? `Every swing bounces to the nearest piggy for ${pc(AB.ricochet(l).mult)} damage` : 'Not learned' },
   stampede: { name: 'Stampede',      max: 5,  base: 3000, g: 2.3,  req: [['lasso', 2], ['ricochet', 2]], eff: l => l ? `Every 12 s cattle charge through one lane for ${AB.stampede(l).mult}× damage` : 'Not learned' },
-  heavy:    { name: 'Heavier Head',  max: 40, base: 25,   g: 1.6,  req: [], eff: l => `${fmt(hammerBase(l))} base damage` },
-  quick:    { name: 'Quick Wrist',   max: 20, base: 20,   g: 1.55, req: [['heavy', 1]], eff: l => `${num2(1.2 * Math.pow(1.09, l))} base swings per second` },
+  heavy:    { name: 'Heavier Head',  max: 40, base: 15,   g: 1.6,  req: [], eff: l => `${fmt(hammerBase(l))} base damage` },
+  quick:    { name: 'Quick Wrist',   max: 20, base: 15,   g: 1.55, req: [['heavy', 1]], eff: l => `${num2(1.2 * Math.pow(1.09, l))} base swings per second` },
   wide:     { name: 'Wide Swing',    max: 10, base: 40,   g: 1.75, req: [['heavy', 1]], eff: l => `+${12 * l}% hit radius` },
   sharp:    { name: 'Sharp Edge',    max: 10, base: 60,   g: 1.7,  req: [['quick', 1]], eff: l => `${4 * l}% crit chance` },
   brutal:   { name: 'Brutal Blows',  max: 10, base: 60,   g: 1.7,  req: [['wide', 1]], eff: l => `Crits deal ${num2(2 + .25 * l)}× damage` },
@@ -413,10 +420,14 @@ const PTRAITS = {
 };
 const dayScale = () => Math.pow(1.07, S.day - 1);
 const pigHp = k => Math.max(1, Math.round(3 * k.hp * dayScale()));
-const pigCash = k => Math.round(4 * k.coin * dayScale());
+const pigCash = k => Math.max(1, Math.round(1.1 * k.coin * dayScale()));
+// rounds up with a chance equal to the fraction, so tiny payouts still add up fairly
+const roundRand = x => Math.floor(x) + (Math.random() < x % 1 ? 1 : 0);
 const unlockedKinds = () => KINDS.filter(k => k.unlock <= S.day);
 const nextKind = () => KINDS.find(k => k.unlock > S.day);
 const quota = d => 6 + 2 * d;
+const affordable = () => Object.keys(SKILLS).filter(id => reqMet(id) && sk(id) < SKILLS[id].max && S.cash >= skCost(id)).length;
+function setShopMode(on) { document.querySelector('.app').classList.toggle('shop', on); $('#shopBar').hidden = !on; }
 const hearts = () => '♥'.repeat(S.lives) + '♡'.repeat(Math.max(0, 3 - S.lives));
 
 /* ---------- State ---------- */
@@ -913,13 +924,13 @@ function damagePig(b, dmg, tag, quiet, cf = 1) {
   if (id === 'straw' && !quiet) { b.dash = 1; b.heading = Math.atan2(b.y - hammer.y, b.x - hammer.x) + rand(-.4, .4); }
   if (id === 'miner' && !quiet) b.boost = Math.min(2.6, (b.boost || 1) + .12);
   if (id === 'rowdy') { if (!(b.rage > 0)) floatText(b.x, b.y - b.s * 1.6, 'RAMPAGE!', '#ff6a4a', 18); b.rage = 3; b.aimT = 0; }
-  const coins = Math.max(1, Math.round(.35 * b.kind.coin * dayScale() * st.gold * cf * (id === 'golden' ? 3 : 1) * (b.shiny ? 5 : 1)));
-  earn(coins);
+  const coins = roundRand(.05 * b.kind.coin * dayScale() * st.gold * cf * (id === 'golden' ? 3 : 1) * (b.shiny ? 5 : 1));
+  if (coins > 0) earn(coins);
   const col = tag === 'crit' ? '#7fc4ff' : tag === 'dyn' ? '#ff8a3c' : tag === 'bolt' ? '#fff6b0' : tag === 'thorn' ? '#cfe89a' : tag === 'ram' ? '#ff6a4a' : '#fff5e0';
   if (!quiet || Math.random() < .35) floatText(b.x + rand(-10, 10), b.y - b.s, (tag === 'crit' ? 'CRIT ' : '') + '-' + fmt(Math.ceil(dmg)), col, tag && !quiet ? 24 : 18);
   if (!quiet) {
     for (let i = 0; i < 3; i++) addPart(shard(b.x, b.y, b.kind.shard, .7));
-    addPart(coinP(b.x, b.y, .8)); sfx.hit(!!tag); sfx.coin(); if (Math.random() < .3) sfx.oink();
+    if (coins > 0) { addPart(coinP(b.x, b.y, .8)); sfx.coin(); } sfx.hit(!!tag); if (Math.random() < .3) sfx.oink();
   }
   if (b.hp <= 0) smash(b);
 }
@@ -974,9 +985,10 @@ function startDay() {
   cacti = []; syncCacti();
   if (hammer.px != null) { hammer.tx = hammer.px; hammer.ty = hammer.py; hammer.moved = true; }
   stage.classList.toggle('mouse', hammer.over);
-  $('#dayOver').hidden = true; sfx.start(); renderTree(); updateHUD();}
+  $('#dayOver').hidden = true; setShopMode(false); sfx.start(); renderTree(); updateHUD();}
 function endDay() {
   day.running = false; hammer.phase = 0; herd = null; feverT = 0; thorns = [];
+  setShopMode(true); setTab('skills');
   stage.classList.remove('mouse');
   for (const b of pigs) dust(b.x, b.y, b.s * 1.4, 6);
   pigs = [];
@@ -1286,6 +1298,11 @@ function updateHUD() {
   $('#hCash').textContent = cash(S.cash); $('#hDay').textContent = S.day; $('#hLives').textContent = hearts(); $('#hSmashed').textContent = fmt(S.smashed);
   const nk = nextKind();
   $('#dayNext').textContent = nk ? `Next piggy: ${nk.name} on day ${nk.unlock}` : 'Every piggy unlocked';
+  if (!day.running) {
+    const n = affordable();
+    $('#shopTxt').textContent = `${cash(S.cash)} to spend · ${n ? `${n} upgrade${n > 1 ? 's' : ''} you can afford` : 'nothing affordable yet'}`;
+    $('#doNudge').textContent = !S.over && n ? `You can afford ${n} upgrade${n > 1 ? 's' : ''} in the skill tree →` : '';
+  }
   updateDayBox(); updateSkillButtons();
 }
 setInterval(() => { if (S) updateHUD(); }, 250);
@@ -1517,7 +1534,7 @@ function start(data) {
   if (window.claude?.hot?.snapshot) window.claude.hot.snapshot(() => ({ S }));
   new ResizeObserver(resize).observe(stage); resize();
   requestAnimationFrame(t => { last = t; frame(t); });
-  try { renderAll(); readyCard(); } catch (e) { console.error(e); }
+  try { renderAll(); readyCard(); setShopMode(true); } catch (e) { console.error(e); }
   setInterval(() => { if (dirty) save(); }, 1500);
   document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
 }
