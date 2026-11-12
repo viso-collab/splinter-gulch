@@ -419,8 +419,8 @@ const PTRAITS = {
   golden: [['When hit', 'Drops 3× gold'], ['When smashed', 'Gold Fever: all gold ×2 for 6 seconds']],
 };
 const dayScale = () => Math.pow(1.07, S.day - 1);
-const pigHp = k => Math.max(1, Math.round(3 * k.hp * dayScale()));
-const pigCash = k => Math.max(1, Math.round(1.1 * k.coin * dayScale()));
+const pigHp = k => Math.max(1, Math.round(2 * k.hp * dayScale()));
+const pigCash = k => Math.max(1, Math.round(.8 * k.coin * dayScale()));
 // rounds up with a chance equal to the fraction, so tiny payouts still add up fairly
 const roundRand = x => Math.floor(x) + (Math.random() < x % 1 ? 1 : 0);
 const unlockedKinds = () => KINDS.filter(k => k.unlock <= S.day);
@@ -924,7 +924,7 @@ function damagePig(b, dmg, tag, quiet, cf = 1) {
   if (id === 'straw' && !quiet) { b.dash = 1; b.heading = Math.atan2(b.y - hammer.y, b.x - hammer.x) + rand(-.4, .4); }
   if (id === 'miner' && !quiet) b.boost = Math.min(2.6, (b.boost || 1) + .12);
   if (id === 'rowdy') { if (!(b.rage > 0)) floatText(b.x, b.y - b.s * 1.6, 'RAMPAGE!', '#ff6a4a', 18); b.rage = 3; b.aimT = 0; }
-  const coins = roundRand(.05 * b.kind.coin * dayScale() * st.gold * cf * (id === 'golden' ? 3 : 1) * (b.shiny ? 5 : 1));
+  const coins = roundRand(.04 * b.kind.coin * dayScale() * st.gold * cf * (id === 'golden' ? 3 : 1) * (b.shiny ? 5 : 1));
   if (coins > 0) earn(coins);
   const col = tag === 'crit' ? '#7fc4ff' : tag === 'dyn' ? '#ff8a3c' : tag === 'bolt' ? '#fff6b0' : tag === 'thorn' ? '#cfe89a' : tag === 'ram' ? '#ff6a4a' : '#fff5e0';
   if (!quiet || Math.random() < .35) floatText(b.x + rand(-10, 10), b.y - b.s, (tag === 'crit' ? 'CRIT ' : '') + '-' + fmt(Math.ceil(dmg)), col, tag && !quiet ? 24 : 18);
@@ -971,7 +971,7 @@ function deathTraits(b, st) {
     for (const o of pigs) if (o !== b && live(o) && Math.hypot(o.x - b.x, o.y - b.y) < 100 * K) damagePig(o, st.dmg, 'shard');
   }
   if (id === 'nest' && day.running) for (let i = 0; i < 2; i++) spawnPig(KINDS[0], b.x + (i ? 1 : -1) * b.s * .8, b.y, true);
-  if (id === 'powder') explode(b.x, b.y, 120 * K, st.dmg * 3, '#ff8a3c');
+  if (id === 'powder') explode(b.x, b.y, 190 * K, st.dmg * 3, '#ff8a3c');
   if (id === 'golden') { feverT = 6; toast('Gold Fever! All gold ×2 for 6 seconds', '#ffd257'); }
 }
 
